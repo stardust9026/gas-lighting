@@ -111,6 +111,13 @@
         }
         .btn-analyze:active { background-color: #1158c7; }
 
+        .btn-dna { 
+            background-color: #6f42c1; 
+            border: 1px solid #8a63d2;
+            color: #ffffff;
+        }
+        .btn-dna:active { background-color: #5930a3; }
+
         .cost-tag {
             font-size: 0.85rem;
             background: rgba(0, 0, 0, 0.5);
@@ -161,6 +168,10 @@
             <span>🔬 Analyze Poop</span>
             <span class="cost-tag">-1 AP</span>
         </button>
+        <button class="btn-dna" onclick="triggerAction('dna', 2)">
+            <span>🧬 DNA Test</span>
+            <span class="cost-tag">-2 AP</span>
+        </button>
     </div>
 
     <button id="reset-btn" onclick="resetGame()">Reset O2 Core</button>
@@ -174,7 +185,8 @@
             silent: 'https://www.myinstants.com/media/sounds/squeaky-fart.mp3',             // Air/Gas escape hiss
             loud: 'https://www.myinstants.com/media/sounds/fart-with-extra-reverb.mp3',               // True ripping flatulence
             nuclear: 'https://www.myinstants.com/media/sounds/church-fart.mp3',   // Catastrophic blast
-            analyze: 'https://www.myinstants.com/media/sounds/medbay-scan.mp3' // Sci-fi hardware scan chirp
+            analyze: 'https://www.myinstants.com/media/sounds/medbay-scan.mp3', // Sci-fi hardware scan chirp
+            dna: 'https://www.myinstants.com/media/sounds/scanning-new-dna.mp3'
         };
 
         // Cache HTML elements
