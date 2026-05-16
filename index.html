@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>(Gas)Lighting - Life Support Control</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --panel-color: #161b22;
+            --gauge-good: #00ff66;
+            --gauge-warn: #ffaa00;
+            --gauge-crit: #ff3333;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        h1 {
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            color: #8b949e;
+            margin: 5px 0 10px 0;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Vertical Air Gauge */
+        #gauge-container {
+            width: 55px;
+            height: 38vh;
+            background-color: #010409;
+            border: 3px solid #30363d;
+            border-radius: 30px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column-reverse;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+        }
+
+        #gauge-bar {
+            width: 100%;
+            height: 100%;
+            background-color: var(--gauge-good);
+            transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
+            box-shadow: 0 0 25px var(--gauge-good);
+        }
+
+        #ap-display {
+            font-size: 3.5rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            margin: 10px 0;
+            letter-spacing: -1px;
+        }
+
+        /* Interface Grid */
+        .button-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        button {
+            background-color: var(--panel-color);
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 20px;
+            padding: 20px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+            transition: transform 0.05s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:active {
+            background-color: #21262d;
+            transform: scale(0.96);
+        }
+
+        /* Tactical Accent Bars */
+        .btn-silent { border-left: 6px solid #58a6ff; }
+        .btn-loud { border-left: 6px solid #d46614; }
+        .btn-nuclear { border-left: 6px solid #f85149; }
+        
+        .btn-analyze { 
+            background-color: #1f6feb; 
+            border: 1px solid #58a6ff;
+            color: #ffffff;
+        }
+        .btn-analyze:active { background-color: #1158c7; }
+
+        .cost-tag {
+            font-size: 0.85rem;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 10px;
+            color: #8b949e;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        #reset-btn {
+            background: transparent;
+            border: none;
+            color: #484f58;
+            font-size: 0.9rem;
+            text-decoration: none;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: none;
+            padding: 10px;
+        }
+        #reset-btn:active { color: #8b949e; background: transparent; transform: none; }
+    </style>
+</head>
+<body>
+
+    <h1>O2 Reserve Monitor</h1>
+
+    <div id="gauge-container">
+        <div id="gauge-bar"></div>
+    </div>
+
+    <div id="ap-display">15 AP</div>
+
+    <div class="button-grid">
+        <button class="btn-silent" onclick="triggerAction('silent', 1)">
+            <span>💨 Silent but Deadly</span>
+            <span class="cost-tag">-1 AP</span>
+        </button>
+        <button class="btn-loud" onclick="triggerAction('loud', 2)">
+            <span>🔊 The Rip (Loud)</span>
+            <span class="cost-tag">-2 AP</span>
+        </button>
+        <button class="btn-nuclear" onclick="triggerAction('nuclear', 3)">
+            <span>💥 The Nuclear Option</span>
+            <span class="cost-tag">-3 AP</span>
+        </button>
+        <button class="btn-analyze" onclick="triggerAction('analyze', 1)">
+            <span>🔬 Analyze Poop</span>
+            <span class="cost-tag">-1 AP</span>
+        </button>
+    </div>
+
+    <button id="reset-btn" onclick="resetGame()">Reset O2 Core</button>
+
+    <script>
+        let currentAP = 15;
+        const maxAP = 15;
+
+        // Predefined Sound Map using direct public MP3 URLs
+        const soundAssets = {
+            silent: 'https://www.soundjay.com/nature/sounds/fizz-1.mp3',             // Air/Gas escape hiss
+            loud: 'https://www.soundjay.com/human/sounds/fart-01.mp3',               // True ripping flatulence
+            nuclear: 'https://www.soundjay.com/mechanical/sounds/explosion-1.mp3',   // Catastrophic blast
+            analyze: 'https://www.soundjay.com/communication/sounds/digital-beep-4.mp3' // Sci-fi hardware scan chirp
+        };
+
+        // Cache HTML elements
+        const bar = document.getElementById('gauge-bar');
+        const display = document.getElementById('ap-display');
+
+        function updateUI() {
+            const percentage = (currentAP / maxAP) * 100;
+            bar.style.height = `${percentage}%`;
+            display.innerText = `${currentAP} AP`;
+
+            // State-based dynamic lighting colors
+            if (currentAP > 8) {
+                bar.style.backgroundColor = 'var(--gauge-good)';
+                bar.style.boxShadow = '0 0 25px var(--gauge-good)';
+            } else if (currentAP > 3) {
+                bar.style.backgroundColor = 'var(--gauge-warn)';
+                bar.style.boxShadow = '0 0 25px var(--gauge-warn)';
+            } else {
+                bar.style.backgroundColor = 'var(--gauge-crit)';
+                bar.style.boxShadow = '0 0 25px var(--gauge-crit)';
+            }
+        }
+
+        function triggerAction(type, cost) {
+            if (currentAP <= 0) return;
+
+            // Enforce deduction limit at zero
+            currentAP = Math.max(0, currentAP - cost);
+            updateUI();
+            
+            // Fire audio asset
+            playAudioFile(soundAssets[type]);
+        }
+
+        function playAudioFile(url) {
+            const audio = new Audio(url);
+            
+            // iOS Safari requires native gesture activation, which is inherently 
+            // handled via the buttons' onclick binding.
+            audio.play().catch(err => {
+                console.error("Audio playback interrupted/blocked:", err);
+            });
+        }
+
+        function resetGame() {
+            currentAP = maxAP;
+            updateUI();
+        }
+
+        // Run initial configuration draw
+        updateUI();
+    </script>
+</body>
+</html>
